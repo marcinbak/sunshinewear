@@ -15,5 +15,5 @@
      limitations under the License.
 -->
 <resources>
-    <bool name="use_today_layout">true</bool>
+  <bool name="use_today_layout">true</bool>
 </resources>

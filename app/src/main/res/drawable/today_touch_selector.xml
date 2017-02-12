@@ -16,11 +16,11 @@
 -->
 
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/colorPrimaryDark" android:state_pressed="true" />
+  <item android:drawable="@color/colorPrimaryDark" android:state_pressed="true"/>
 
-    <item android:drawable="@color/colorPrimaryDark" android:state_activated="true" />
+  <item android:drawable="@color/colorPrimaryDark" android:state_activated="true"/>
 
-    <item android:drawable="@color/colorPrimaryDark" android:state_selected="true" />
+  <item android:drawable="@color/colorPrimaryDark" android:state_selected="true"/>
 
-    <item android:drawable="@color/colorPrimary" />
+  <item android:drawable="@color/colorPrimary"/>
 </selector>
