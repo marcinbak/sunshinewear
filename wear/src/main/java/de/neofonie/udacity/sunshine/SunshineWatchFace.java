@@ -25,6 +25,7 @@ import android.graphics.*;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.wearable.complications.ComplicationData;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.view.*;
@@ -42,8 +43,6 @@ import java.util.concurrent.TimeUnit;
  * low-bit ambient mode, the text is drawn without anti-aliasing in ambient mode.
  */
 public class SunshineWatchFace extends CanvasWatchFaceService {
-  private static final Typeface NORMAL_TYPEFACE =
-      Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
   private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE, MMM d yyyy", Locale.getDefault());
 
@@ -95,8 +94,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         invalidate();
       }
     };
-    float mXOffset;
-    float mYOffset;
 
     /**
      * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -121,7 +118,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
           .setAcceptsTapEvents(true)
           .build());
       Resources resources = SunshineWatchFace.this.getResources();
-      mYOffset = resources.getDimension(R.dimen.digital_y_offset);
 
       mCalendar = Calendar.getInstance();
       DATE_FORMAT.setTimeZone(mCalendar.getTimeZone());
@@ -153,6 +149,11 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     public void onDestroy() {
       mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
       super.onDestroy();
+    }
+
+    @Override
+    public void onComplicationDataUpdate(int watchFaceComplicationId, ComplicationData data) {
+      super.onComplicationDataUpdate(watchFaceComplicationId, data);
     }
 
     @Override
@@ -192,16 +193,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     }
 
     @Override
-    public void onApplyWindowInsets(WindowInsets insets) {
-      super.onApplyWindowInsets(insets);
-
-      // Load resources that have alternate values for round watches.
-      Resources resources = SunshineWatchFace.this.getResources();
-      boolean isRound = insets.isRound();
-      mXOffset = resources.getDimension(isRound ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
-    }
-
-    @Override
     public void onPropertiesChanged(Bundle properties) {
       super.onPropertiesChanged(properties);
       mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
@@ -218,11 +209,19 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
       super.onAmbientModeChanged(inAmbientMode);
       if (mAmbient != inAmbientMode) {
         mAmbient = inAmbientMode;
+        if (!inAmbientMode) {
+          myLayout.setBackgroundColor(mPrimaryDark);
+          mIconTv.getCompoundDrawables()[0].setColorFilter(null);
+        } else {
+          myLayout.setBackgroundColor(Color.BLACK);
+          mIconTv.getCompoundDrawables()[0].setColorFilter(mBlackAndWhiteFilter);
+        }
         if (mLowBitAmbient) {
           mDateTv.getPaint().setAntiAlias(!inAmbientMode);
           mTimeTv.getPaint().setAntiAlias(!inAmbientMode);
           mTempMinTv.getPaint().setAntiAlias(!inAmbientMode);
           mTempMaxTv.getPaint().setAntiAlias(!inAmbientMode);
+          mIconTv.setVisibility(inAmbientMode ? View.INVISIBLE : View.VISIBLE);
         }
         invalidate();
       }
@@ -232,40 +231,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
       updateTimer();
     }
 
-//    /**
-//     * Captures tap event (and tap type) and toggles the background color if the user finishes
-//     * a tap.
-//     */
-//    @Override
-//    public void onTapCommand(int tapType, int x, int y, long eventTime) {
-//      switch (tapType) {
-//        case TAP_TYPE_TOUCH:
-//          // The user has started touching the screen.
-//          break;
-//        case TAP_TYPE_TOUCH_CANCEL:
-//          // The user has started a different gesture or otherwise cancelled the tap.
-//          break;
-//        case TAP_TYPE_TAP:
-//          // The user has completed the tap gesture.
-//          // TODO: Add code to handle the tap gesture.
-//          Toast.makeText(getApplicationContext(), R.string.message, Toast.LENGTH_SHORT)
-//              .show();
-//          break;
-//      }
-//      invalidate();
-//    }
-
     @Override
     public void onDraw(Canvas canvas, Rect bounds) {
-      // Draw the background.
-      if (!isInAmbientMode()) {
-        myLayout.setBackgroundColor(mPrimaryDark);
-        mIconTv.getCompoundDrawables()[0].setColorFilter(null);
-      } else {
-        myLayout.setBackgroundColor(Color.BLACK);
-        mIconTv.getCompoundDrawables()[0].setColorFilter(mBlackAndWhiteFilter);
-      }
-
       // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
       long now = System.currentTimeMillis();
       mCalendar.setTimeInMillis(now);
@@ -276,7 +243,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
       myLayout.measure(specW, specH);
       myLayout.layout(0, 0, myLayout.getMeasuredWidth(), myLayout.getMeasuredHeight());
 
-//      canvas.drawColor(Color.BLACK);
       myLayout.draw(canvas);
     }
 
@@ -312,4 +278,5 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
       }
     }
   }
+
 }
