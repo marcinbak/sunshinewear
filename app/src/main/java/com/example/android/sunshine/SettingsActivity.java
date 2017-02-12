@@ -32,15 +32,15 @@ import android.view.MenuItem;
  */
 public class SettingsActivity extends AppCompatActivity {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    }
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_settings);
+    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+  }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
         /*
          * Normally, calling setDisplayHomeAsUpEnabled(true) (we do so in onCreate here) as well as
          * declaring the parent activity in the AndroidManifest is all that is required to get the
@@ -52,12 +52,12 @@ public class SettingsActivity extends AppCompatActivity {
          * clicked and then call onBackPressed to navigate to the previous Activity when this
          * happens.
          */
-        int id = item.getItemId();
-        if (id == android.R.id.home) {
-            onBackPressed();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+    int id = item.getItemId();
+    if (id == android.R.id.home) {
+      onBackPressed();
+      return true;
     }
+
+    return super.onOptionsItemSelected(item);
+  }
 }
