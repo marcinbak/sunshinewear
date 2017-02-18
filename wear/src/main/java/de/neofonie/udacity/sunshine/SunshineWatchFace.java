@@ -272,8 +272,16 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
       }
 
       if (mWeather != null) {
-        int iconResId = IconUtils.getArtResourceIdForWeatherCondition(mWeather);
-        mIconTv.setCompoundDrawablesWithIntrinsicBounds(iconResId, 0, 0, 0);
+        if (isInAmbientMode()) {
+          int stringResId = IconUtils.getStringResourceIdForWeatherCondition(mWeather);
+          mIconTv.setText(stringResId);
+          mIconTv.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+        } else {
+          int iconResId = IconUtils.getArtResourceIdForWeatherCondition(mWeather);
+          mIconTv.setCompoundDrawablesWithIntrinsicBounds(iconResId, 0, 0, 0);
+          mIconTv.setText(null);
+        }
+
       }
 
       myLayout.measure(specW, specH);

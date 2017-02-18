@@ -2,4 +2,12 @@
   <string name="app_name">Sunshine</string>
   <string name="my_digital_name">Sunshine</string>
   <string name="temperature">%d&#xb0;</string>
+  <string name="storm_label">Storm</string>
+  <string name="light_rain_label">Light rain</string>
+  <string name="rain_label">Rain</string>
+  <string name="snow_label">Snow</string>
+  <string name="clear_label">Clear</string>
+  <string name="fog_label">Fog</string>
+  <string name="cloudy_label">Cloudy</string>
+  <string name="light_clouds_label">Light clouds</string>
 </resources>

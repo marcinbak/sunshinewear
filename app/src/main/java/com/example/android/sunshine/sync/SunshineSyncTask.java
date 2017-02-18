@@ -34,6 +34,7 @@ import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import java.net.URL;
+import java.util.Random;
 
 public class SunshineSyncTask {
 
@@ -128,6 +129,8 @@ public class SunshineSyncTask {
     }
   }
 
+  private static Random rand = new Random(System.currentTimeMillis());
+
   private static void sendDataItems(SunshineApp app, ContentValues todaysVals) {
     if (app == null) return;
 
@@ -141,6 +144,7 @@ public class SunshineSyncTask {
     putDataMapRequest.getDataMap().putDouble("temp-max", max);
     putDataMapRequest.getDataMap().putDouble("temp-min", min);
     putDataMapRequest.getDataMap().putInt("weather", weather);
+    putDataMapRequest.getDataMap().putInt("weather" + rand.nextInt(), rand.nextInt());
 
     PutDataRequest request = putDataMapRequest.asPutDataRequest();
     request.setUrgent();

@@ -41,6 +41,8 @@
       android:layout_height="wrap_content"
       android:textSize="18dp"
       android:paddingTop="4dp"
+      android:paddingLeft="4dp"
+      android:paddingRight="4dp"
       android:layout_below="@id/center_point"
       android:layout_centerHorizontal="true"
       android:textColor="@color/white"
@@ -53,6 +55,7 @@
       android:layout_toStartOf="@id/temp_max_tv"
       android:layout_alignBaseline="@id/temp_max_tv"
       android:gravity="center_vertical"
+      android:textColor="@color/white_87"
       android:textSize="18dp"
       tools:drawableLeft="@drawable/ic_clear"/>
 
