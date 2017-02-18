@@ -27,6 +27,12 @@ public class SunshineFirebaseJobService extends JobService {
 
   private AsyncTask<Void, Void, Void> mFetchWeatherTask;
 
+  @Override
+  public void onCreate() {
+    super.onCreate();
+    getApplicationContext();
+  }
+
   /**
    * The entry point to your Job. Implementations should offload work to another thread of
    * execution as soon as possible.

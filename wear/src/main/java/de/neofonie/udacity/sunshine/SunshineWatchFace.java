@@ -25,11 +25,16 @@ import android.graphics.*;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.wearable.complications.ComplicationData;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.util.Log;
 import android.view.*;
 import android.widget.TextView;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.*;
 
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
@@ -82,7 +87,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     }
   }
 
-  private class Engine extends CanvasWatchFaceService.Engine {
+  private class Engine extends CanvasWatchFaceService.Engine implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, DataApi.DataListener {
     final Handler mUpdateTimeHandler = new EngineHandler(this);
     boolean mRegisteredTimeZoneReceiver = false;
     boolean  mAmbient;
@@ -94,6 +99,11 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         invalidate();
       }
     };
+
+    private GoogleApiClient mGoogleApiClient;
+    private Integer mWeather = null;
+    private String  mTempMax = null;
+    private String  mTempMin = null;
 
     /**
      * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -139,21 +149,22 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
       mIconTv = (TextView) myLayout.findViewById(R.id.weather_icon_tv);
       mTempMinTv = (TextView) myLayout.findViewById(R.id.temp_min_tv);
 
-
       ColorMatrix matrix = new ColorMatrix();
       matrix.setSaturation(0);
       mBlackAndWhiteFilter = new ColorMatrixColorFilter(matrix);
+
+      mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFace.this)
+          .addApi(Wearable.API)
+          .addConnectionCallbacks(this)
+          .addOnConnectionFailedListener(this)
+          .build();
     }
 
     @Override
     public void onDestroy() {
       mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+      releaseGoogleApiClient();
       super.onDestroy();
-    }
-
-    @Override
-    public void onComplicationDataUpdate(int watchFaceComplicationId, ComplicationData data) {
-      super.onComplicationDataUpdate(watchFaceComplicationId, data);
     }
 
     @Override
@@ -162,17 +173,25 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
       if (visible) {
         registerReceiver();
-
+        mGoogleApiClient.connect();
         // Update time zone in case it changed while we weren't visible.
         mCalendar.setTimeZone(TimeZone.getDefault());
         invalidate();
       } else {
         unregisterReceiver();
+        releaseGoogleApiClient();
       }
 
       // Whether the timer should be running depends on whether we're visible (as well as
       // whether we're in ambient mode), so we may need to start or stop the timer.
       updateTimer();
+    }
+
+    private void releaseGoogleApiClient() {
+      if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+        Wearable.DataApi.removeListener(mGoogleApiClient, this);
+        mGoogleApiClient.disconnect();
+      }
     }
 
     private void registerReceiver() {
@@ -211,10 +230,14 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         mAmbient = inAmbientMode;
         if (!inAmbientMode) {
           myLayout.setBackgroundColor(mPrimaryDark);
-          mIconTv.getCompoundDrawables()[0].setColorFilter(null);
+          if (mIconTv.getCompoundDrawables()[0] != null) {
+            mIconTv.getCompoundDrawables()[0].setColorFilter(null);
+          }
         } else {
           myLayout.setBackgroundColor(Color.BLACK);
-          mIconTv.getCompoundDrawables()[0].setColorFilter(mBlackAndWhiteFilter);
+          if (mIconTv.getCompoundDrawables()[0] != null) {
+            mIconTv.getCompoundDrawables()[0].setColorFilter(mBlackAndWhiteFilter);
+          }
         }
         if (mLowBitAmbient) {
           mDateTv.getPaint().setAntiAlias(!inAmbientMode);
@@ -239,6 +262,19 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
       mDateTv.setText(DATE_FORMAT.format(mCalendar.getTime()));
       mTimeTv.setText(String.format("%d:%02d", mCalendar.get(Calendar.HOUR), mCalendar.get(Calendar.MINUTE)));
+
+      if (mTempMax != null) {
+        mTempMaxTv.setText(mTempMax);
+      }
+
+      if (mTempMin != null) {
+        mTempMinTv.setText(mTempMin);
+      }
+
+      if (mWeather != null) {
+        int iconResId = IconUtils.getArtResourceIdForWeatherCondition(mWeather);
+        mIconTv.setCompoundDrawablesWithIntrinsicBounds(iconResId, 0, 0, 0);
+      }
 
       myLayout.measure(specW, specH);
       myLayout.layout(0, 0, myLayout.getMeasuredWidth(), myLayout.getMeasuredHeight());
@@ -276,6 +312,39 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             - (timeMs % INTERACTIVE_UPDATE_RATE_MS);
         mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
       }
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+      Log.i("WatchFace", "onConnected");
+      Wearable.DataApi.addListener(mGoogleApiClient, this);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+      Log.i("WatchFace", "onConnectionSuspended");
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+      Log.i("WatchFace", "onConnectionFailed");
+    }
+
+    @Override
+    public void onDataChanged(DataEventBuffer dataEventBuffer) {
+      for (DataEvent event : dataEventBuffer) {
+        if (event.getType() == DataEvent.TYPE_CHANGED) {
+          // DataItem changed
+          DataItem item = event.getDataItem();
+          if (item.getUri().getPath().compareTo("/weather-info") == 0) {
+            DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+            mWeather = dataMap.getInt("weather");
+            mTempMax = getString(R.string.temperature, Math.round(dataMap.getDouble("temp-max")));
+            mTempMin = getString(R.string.temperature, Math.round(dataMap.getDouble("temp-min")));
+          }
+        }
+      }
+
     }
   }
 

@@ -30,6 +30,7 @@
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:textSize="22dp"
+      android:textColor="@color/white"
       tools:text="15:50"
       android:layout_centerHorizontal="true"
       android:layout_above="@+id/date_tv"/>
@@ -42,7 +43,8 @@
       android:paddingTop="4dp"
       android:layout_below="@id/center_point"
       android:layout_centerHorizontal="true"
-      android:text="25&#xb0;"/>
+      android:textColor="@color/white"
+      tools:text="25&#xb0;"/>
 
   <TextView
       android:id="@+id/weather_icon_tv"
@@ -52,7 +54,7 @@
       android:layout_alignBaseline="@id/temp_max_tv"
       android:gravity="center_vertical"
       android:textSize="18dp"
-      android:drawableLeft="@drawable/ic_clear"/>
+      tools:drawableLeft="@drawable/ic_clear"/>
 
   <TextView
       android:id="@+id/temp_min_tv"
@@ -62,6 +64,6 @@
       android:layout_alignBaseline="@id/temp_max_tv"
       android:textSize="18dp"
       android:textColor="@color/white_87"
-      android:text="15&#xb0;"/>
+      tools:text="15&#xb0;"/>
 
 </RelativeLayout>

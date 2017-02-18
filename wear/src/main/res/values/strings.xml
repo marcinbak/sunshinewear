@@ -1,4 +1,5 @@
 <resources>
   <string name="app_name">Sunshine</string>
   <string name="my_digital_name">Sunshine</string>
+  <string name="temperature">%d&#xb0;</string>
 </resources>

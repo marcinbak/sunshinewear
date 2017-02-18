@@ -18,12 +18,20 @@ package com.example.android.sunshine.sync;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.text.format.DateUtils;
+import android.util.Log;
+import com.example.android.sunshine.SunshineApp;
 import com.example.android.sunshine.data.SunshinePreferences;
 import com.example.android.sunshine.data.WeatherContract;
 import com.example.android.sunshine.utilities.NetworkUtils;
 import com.example.android.sunshine.utilities.NotificationUtils;
 import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
 
 import java.net.URL;
 
@@ -38,6 +46,10 @@ public class SunshineSyncTask {
    * @param context Used to access utility methods and the ContentResolver
    */
   synchronized public static void syncWeather(Context context) {
+    SunshineApp app = null;
+    if (context instanceof SunshineApp) {
+      app = (SunshineApp) context;
+    }
 
     try {
             /*
@@ -54,14 +66,17 @@ public class SunshineSyncTask {
       ContentValues[] weatherValues = OpenWeatherJsonUtils
           .getWeatherContentValuesFromJson(context, jsonWeatherResponse);
 
-            /*
-             * In cases where our JSON contained an error code, getWeatherContentValuesFromJson
-             * would have returned null. We need to check for those cases here to prevent any
-             * NullPointerExceptions being thrown. We also have no reason to insert fresh data if
-             * there isn't any to insert.
-             */
+      /*
+       * In cases where our JSON contained an error code, getWeatherContentValuesFromJson
+       * would have returned null. We need to check for those cases here to prevent any
+       * NullPointerExceptions being thrown. We also have no reason to insert fresh data if
+       * there isn't any to insert.
+       */
       if (weatherValues != null && weatherValues.length != 0) {
-                /* Get a handle on the ContentResolver to delete and insert data */
+        // send update to wear device
+        sendDataItems(app, weatherValues[0]);
+
+        /* Get a handle on the ContentResolver to delete and insert data */
         ContentResolver sunshineContentResolver = context.getContentResolver();
 
                 /* Delete old weather data because we don't need to keep multiple days' data */
@@ -112,4 +127,34 @@ public class SunshineSyncTask {
       e.printStackTrace();
     }
   }
+
+  private static void sendDataItems(SunshineApp app, ContentValues todaysVals) {
+    if (app == null) return;
+
+    Log.i("SunshineSyncTask", "Sending data items.");
+
+    double max = todaysVals.getAsDouble(WeatherContract.WeatherEntry.COLUMN_MAX_TEMP);
+    double min = todaysVals.getAsDouble(WeatherContract.WeatherEntry.COLUMN_MIN_TEMP);
+    int weather = todaysVals.getAsInteger(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID);
+
+    PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/weather-info");
+    putDataMapRequest.getDataMap().putDouble("temp-max", max);
+    putDataMapRequest.getDataMap().putDouble("temp-min", min);
+    putDataMapRequest.getDataMap().putInt("weather", weather);
+
+    PutDataRequest request = putDataMapRequest.asPutDataRequest();
+    request.setUrgent();
+    Wearable.DataApi.putDataItem(app.getGoogleApiClient(), request)
+        .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+          @Override
+          public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
+            if (dataItemResult.getStatus().isSuccess()) {
+              Log.i("SunshineSyncTask", "Success sending data items.");
+            } else {
+              Log.i("SunshineSyncTask", "Failure sending data items.");
+            }
+          }
+        });
+  }
+
 }
