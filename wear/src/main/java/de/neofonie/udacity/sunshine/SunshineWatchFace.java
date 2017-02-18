@@ -34,11 +34,13 @@ import android.view.*;
 import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.*;
 
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -326,6 +328,16 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     public void onConnected(@Nullable Bundle bundle) {
       Log.i("WatchFace", "onConnected");
       Wearable.DataApi.addListener(mGoogleApiClient, this);
+      Wearable.DataApi.getDataItems(mGoogleApiClient)
+          .setResultCallback(new ResultCallback<DataItemBuffer>() {
+            @Override
+            public void onResult(@NonNull DataItemBuffer dataItems) {
+              Iterator<DataItem> iter = dataItems.iterator();
+              while (iter.hasNext()) {
+                updateData(iter.next());
+              }
+            }
+          });
     }
 
     @Override
@@ -342,17 +354,18 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     public void onDataChanged(DataEventBuffer dataEventBuffer) {
       for (DataEvent event : dataEventBuffer) {
         if (event.getType() == DataEvent.TYPE_CHANGED) {
-          // DataItem changed
-          DataItem item = event.getDataItem();
-          if (item.getUri().getPath().compareTo("/weather-info") == 0) {
-            DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-            mWeather = dataMap.getInt("weather");
-            mTempMax = getString(R.string.temperature, Math.round(dataMap.getDouble("temp-max")));
-            mTempMin = getString(R.string.temperature, Math.round(dataMap.getDouble("temp-min")));
-          }
+          updateData(event.getDataItem());
         }
       }
+    }
 
+    private void updateData(DataItem item) {
+      if (item.getUri().getPath().compareTo("/weather-info") == 0) {
+        DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+        mWeather = dataMap.getInt("weather");
+        mTempMax = getString(R.string.temperature, Math.round(dataMap.getDouble("temp-max")));
+        mTempMin = getString(R.string.temperature, Math.round(dataMap.getDouble("temp-min")));
+      }
     }
   }
 
